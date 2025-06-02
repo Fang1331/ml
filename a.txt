@@ -1,0 +1,341 @@
+Experiment 1
+
+import numpy as np 
+import pandas as pd 
+import seaborn as sns 
+import matplotlib.pyplot as plt 
+%matplotlib inline 
+
+df=pd.read_csv("california_housing.csv") 
+df.head() 
+
+df.shape 
+df.info() 
+df.describe()
+list(df.columns) 
+df.isnull().values.any() 
+df.duplicated().sum() 
+df.isnull().sum() 
+
+df['median_income'].hist() 
+
+df.hist(bins=30, figsize=(12, 10), edgecolor='black') 
+
+sns.boxplot(y=df['population']) 
+plt.show()
+
+sns.boxplot(y=df['housing_median_age']) 
+plt.show()
+
+sns.distplot(df['housing_median_age']) 
+
+df.hist(stacked=False, bins=100, figsize=(12,40), layout=(14,2));
+
+
+Experiment 2
+
+import numpy as np 
+import pandas as pd 
+import seaborn as sns 
+import matplotlib.pyplot as plt 
+%matplotlib inline 
+
+df=pd.read_csv("california_housing.csv") 
+df.head() 
+df.shape 
+df.info() 
+df.describe() 
+list(df.columns) 
+df.isnull().values.any() 
+
+plt.figure(figsize = (10,8)) 
+sns.heatmap(df.corr(), annot=True,fmt='.2f');
+
+plt.figure(figsize=(12,6)) 
+sns.heatmap(df.corr(),cmap='plasma',fmt='.2g',annot=True,mask=np.triu( df.corr(),+1)) 
+plt.show()
+
+sns.pairplot(df) 
+plt.show()
+
+
+Experiment 3
+
+import numpy as np 
+import matplotlib.pyplot as plt 
+import seaborn as sns 
+from sklearn import datasets 
+from sklearn.decomposition import PCA 
+from sklearn.preprocessing import StandardScaler 
+
+iris = datasets.load_iris() 
+X = iris.data 
+y = iris.target 
+
+scaler = StandardScaler() 
+X_scaled = scaler.fit_transform(X) 
+
+pca = PCA(n_components=2) 
+X_pca = pca.fit_transform(X_scaled) 
+
+plt.figure(figsize=(8, 6)) 
+sns.scatterplot(x=X_pca[:, 0], y=X_pca[:, 1], hue=y,  
+palette="viridis", s=80) 
+plt.xlabel('Principal Component 1') 
+plt.ylabel('Principal Component 2') 
+plt.title('PCA of Iris Dataset') 
+plt.legend(labels=iris.target_names) 
+plt.show()
+
+print("Explained Variance Ratio:", pca.explained_variance_ratio_) 
+print(X_pca) 
+pca
+
+
+Experiment 4
+
+import pandas as pd 
+
+df = pd.read_csv("find_s.csv") 
+df.head() 
+df.shape 
+df.info() 
+df.isnull().sum() 
+df.describe() 
+
+def find_s_algorithm(data, target_col): 
+    features = data.columns[1:-1] 
+    hypothesis = None 
+    for i, row in data.iterrows(): 
+        if row[target_col] == "Yes": 
+            if hypothesis is None: 
+                hypothesis = row[features].tolist() 
+            else: 
+                for j in range(len(hypothesis)): 
+                    if hypothesis[j] != row[features].iloc[j]:  
+                        hypothesis[j] = "?"  
+    return hypothesis 
+
+final_hypothesis = find_s_algorithm(df, "EnjoySport") 
+print("Most Specific Hypothesis:", final_hypothesis)
+
+
+Experiment 5
+
+import numpy as np
+import matplotlib.pyplot as plt
+from collections import Counter
+
+data = np.random.rand(100)
+labels = ["Class1" if x <= 0.5 else "Class2" for x in data[:50]]
+
+def euclidean_distance(x1, x2):
+    return abs(x1 - x2)
+
+def knn_classifier(train_data, train_labels, test_point, k):
+    distances = [(euclidean_distance(test_point, train_data[i]), train_labels[i]) for i in range(len(train_data))]
+    distances.sort(key=lambda x: x[0])
+    k_nearest_neighbors = distances[:k]
+    k_nearest_labels = [label for _, label in k_nearest_neighbors]
+    return Counter(k_nearest_labels).most_common(1)[0][0]
+
+train_data = data[:50]
+train_labels = labels
+test_data = data[50:]
+
+k_values = [1, 2, 3, 4, 5, 20, 30]
+print("--- k-Nearest Neighbors Classification ---")
+print("Training dataset: First 50 points labeled based on the rule (x <= 0.5 -> Class1, x > 0.5 -> Class2)")
+print("Testing dataset: Remaining 50 points to be classified\n")
+
+results = {}
+
+for k in k_values:
+    print(f"Results for k = {k}:")
+    classified_labels = [knn_classifier(train_data, train_labels, test_point, k) for test_point in test_data]
+    results[k] = classified_labels
+    for i, label in enumerate(classified_labels, start=51):
+        print(f"Point x{i} (value: {test_data[i - 51]:.4f}) is classified as {label}")
+    print("\n")
+
+print("Classification complete.\n")
+
+for k in k_values:
+    classified_labels = results[k]
+    class1_points = [test_data[i] for i in range(len(test_data)) if classified_labels[i] == "Class1"]
+    class2_points = [test_data[i] for i in range(len(test_data)) if classified_labels[i] == "Class2"]
+    plt.figure(figsize=(10, 6))
+    plt.scatter(train_data, [0] * len(train_data), c=["blue" if label == "Class1" else "red" for label in train_labels], label="Training Data", marker="o")
+    plt.scatter(class1_points, [1] * len(class1_points), c="blue", label="Class1 (Test)", marker="x")
+    plt.scatter(class2_points, [1] * len(class2_points), c="red", label="Class2 (Test)", marker="x")
+    plt.title(f"k-NN Classification Results for k = {k}")
+    plt.xlabel("Data Points")
+    plt.ylabel("Classification Level")
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+
+
+Experiment 6
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+def gaussian_kernel(x, x_i, tau):
+    return np.exp(-np.sum((x - x_i) ** 2) / (2 * tau ** 2))
+
+def locally_weighted_regression(x_query, X, y, tau):
+    m = X.shape[0]
+    W = np.eye(m)
+    for i in range(m):
+        W[i, i] = gaussian_kernel(x_query, X[i], tau)
+    XTWX = X.T @ W @ X
+    if np.linalg.det(XTWX) == 0:
+        theta = np.linalg.pinv(XTWX) @ X.T @ W @ y
+    else:
+        theta = np.linalg.inv(XTWX) @ X.T @ W @ y
+    return x_query @ theta
+
+X = np.linspace(0, 10, 100)
+y = np.sin(X) + 0.1 * np.random.randn(100)
+X_b = np.c_[np.ones((100, 1)), X]
+
+X_test = np.linspace(0, 10, 100)
+X_test_b = np.c_[np.ones((100, 1)), X_test]
+
+y_pred = []
+tau = 0.5
+
+for x in X_test_b:
+    y_pred.append(locally_weighted_regression(x, X_b, y, tau))
+
+plt.figure(figsize=(10, 6))
+plt.scatter(X, y, label='Training data')
+plt.plot(X_test, y_pred, color='red', label='LWR Prediction')
+plt.xlabel('X')
+plt.ylabel('y')
+plt.title(f'Locally Weighted Regression (tau={tau})')
+plt.legend()
+plt.grid(True)
+plt.show()
+
+
+Experiment 7
+
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+from sklearn.preprocessing import PolynomialFeatures
+df = pd.read_csv("auto-mpg.csv")
+df['horsepower'] = pd.to_numeric(df['horsepower'], errors='coerce')
+df_clean = df.dropna(subset=['horsepower', 'mpg'])
+X = df_clean[['horsepower']].values
+y = df_clean[['mpg']].values
+from sklearn.metrics import mean_squared_error, mean_absolute_error
+from sklearn.pipeline import make_pipeline
+degree = 2
+poly_model = make_pipeline(PolynomialFeatures(degree), LinearRegression())
+poly_model.fit(X, y)
+y_pred = poly_model.predict(X)
+rmse = np.sqrt(mean_squared_error(y, y_pred))
+mae = mean_absolute_error(y, y_pred)
+print(f"Polynomial Regression (degree={degree})")
+print(f"RMSE: {rmse:.2f}")
+print(f"MAE: {mae:.2f}")
+hp_input = np.array([[56]])
+mpg_pred = poly_model.predict(hp_input)
+
+
+Experiment 8
+
+from sklearn.datasets import load_breast_cancer
+from sklearn.tree import DecisionTreeClassifier, plot_tree
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import classification_report, accuracy_score
+import matplotlib.pyplot as plt
+
+data = load_breast_cancer()
+X = data.data
+y = data.target
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+model = DecisionTreeClassifier()
+model.fit(X_train, y_train)
+
+y_pred = model.predict(X_test)
+
+print("Accuracy:", accuracy_score(y_test, y_pred))
+print(classification_report(y_test, y_pred))
+
+plt.figure(figsize=(20,10))
+plot_tree(model, filled=True, feature_names=data.feature_names, class_names=data.target_names)
+plt.show()
+
+
+Experiment 9
+
+from sklearn.datasets import fetch_olivetti_faces
+from sklearn.model_selection import train_test_split
+from sklearn.naive_bayes import GaussianNB
+from sklearn.metrics import classification_report, accuracy_score
+import matplotlib.pyplot as plt
+
+faces = fetch_olivetti_faces()
+X = faces.data
+y = faces.target
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+model = GaussianNB()
+model.fit(X_train, y_train)
+
+y_pred = model.predict(X_test)
+
+print("Accuracy:", accuracy_score(y_test, y_pred))
+print(classification_report(y_test, y_pred))
+
+fig, ax = plt.subplots(5, 10, figsize=(15, 8))  # Plot 50 faces
+for i in range(50):
+    row = i // 10
+    col = i % 10
+    ax[row, col].imshow(X_test[i].reshape(64, 64), cmap='gray')
+    ax[row, col].set_title(f"Pred: {y_pred[i]}")
+    ax[row, col].axis('off')
+
+plt.tight_layout()
+plt.savefig("olivetti_predictions.png")  # Saves all plotted images to a file
+plt.show()
+
+
+Experiment 10
+
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.cluster import KMeans
+from sklearn.decomposition import PCA
+from sklearn.datasets import load_breast_cancer
+
+data = load_breast_cancer()
+X = pd.DataFrame(data.data, columns=data.feature_names)
+
+kmeans = KMeans(n_clusters=2, random_state=42)
+kmeans.fit(X)
+labels = kmeans.labels_
+
+pca = PCA(n_components=2)
+reduced_X = pca.fit_transform(X)
+
+df_plot = pd.DataFrame()
+df_plot['PCA1'] = reduced_X[:, 0]
+df_plot['PCA2'] = reduced_X[:, 1]
+df_plot['Cluster'] = labels
+
+plt.figure(figsize=(10, 6))
+sns.scatterplot(data=df_plot, x='PCA1', y='PCA2', hue='Cluster', palette='viridis')
+plt.title("K-Means Clustering of Breast Cancer Dataset (PCA Projection)")
+plt.show()
