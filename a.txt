@@ -32,3 +32,28 @@ gradle -v
 
 Experiment 2
 
+mvn archetype:generate \
+-DgroupId=com.example \
+-DartifactId=MyMavenApp \
+-DarchetypeArtifactId=maven-archetype-quickstart \
+-DinteractiveMode=false
+
+gedit pom.xml
+
+<dependency>
+  <groupId>junit</groupId>
+  <artifactId>junit</artifactId>
+  <version>4.13.2</version>
+  <scope>test</scope>
+</dependency>
+
+mvn compile
+
+mvn test
+
+mvn package
+
+ls target/
+
+
+
